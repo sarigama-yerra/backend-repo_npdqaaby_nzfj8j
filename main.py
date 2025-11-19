@@ -1,8 +1,13 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import ValidationError
+from typing import Any, Dict
 
-app = FastAPI()
+from schemas import DemoRequest
+from database import create_document
+
+app = FastAPI(title="Bank Verify Ledger API", docs_url="/docs")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,11 +19,11 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Hello from FastAPI Backend!"}
+    return {"message": "BVL API running"}
 
 @app.get("/api/hello")
 def hello():
-    return {"message": "Hello from the backend API!"}
+    return {"message": "Hello from the BVL backend API!"}
 
 @app.get("/test")
 def test_database():
@@ -63,6 +68,27 @@ def test_database():
     response["database_name"] = "✅ Set" if os.getenv("DATABASE_NAME") else "❌ Not Set"
     
     return response
+
+@app.post("/api/demo-requests")
+def create_demo_request(payload: Dict[str, Any]):
+    """Accept demo requests from the landing page and store in MongoDB"""
+    try:
+        demo = DemoRequest(**payload)
+        if not demo.consent:
+            raise HTTPException(status_code=400, detail="Consent is required to submit the form.")
+        inserted_id = create_document("demorequest", demo)
+        return {"status": "success", "id": inserted_id}
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=e.errors())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/schema")
+def get_schemas():
+    """Expose available schemas for tooling/viewers"""
+    return {
+        "DemoRequest": DemoRequest.model_json_schema()
+    }
 
 
 if __name__ == "__main__":

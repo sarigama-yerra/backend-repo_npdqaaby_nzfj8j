@@ -11,8 +11,8 @@ Model name is converted to lowercase for the collection name:
 - BlogPost -> "blogs" collection
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, Literal
 
 # Example schemas (replace with your own):
 
@@ -40,6 +40,36 @@ class Product(BaseModel):
 
 # Add your own schemas here:
 # --------------------------------------------------
+
+class DemoRequest(BaseModel):
+    """
+    Demo requests from the landing page
+    Collection name: "demorequest"
+    """
+    full_name: str = Field(..., min_length=2, description="Visitor's full name")
+    work_email: EmailStr = Field(..., description="Work email address")
+    company_name: str = Field(..., min_length=2, description="Company or organization")
+    role_title: Optional[str] = Field(None, description="Role or title")
+    industry: Literal['Banking','Law Firm','Fintech','Corporate','Other'] = Field(..., description="Industry selection")
+    primary_use_case: Optional[str] = Field(None, max_length=1000, description="Short description of use case")
+    preferred_time_zone: Optional[str] = Field(None, description="Time zone preference")
+    message: Optional[str] = Field(None, max_length=2000, description="Additional notes")
+    consent: bool = Field(..., description="Consent to be contacted")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "full_name": "Alex Morgan",
+                "work_email": "alex@bank.com",
+                "company_name": "Global Bank",
+                "role_title": "Product Manager",
+                "industry": "Banking",
+                "primary_use_case": "Verifiable Proof-of-Funds for onboarding",
+                "preferred_time_zone": "UTC-5 (EST)",
+                "message": "Looking to pilot with our private banking team.",
+                "consent": True
+            }
+        }
 
 # Note: The Flames database viewer will automatically:
 # 1. Read these schemas from GET /schema endpoint
